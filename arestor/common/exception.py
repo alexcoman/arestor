@@ -49,6 +49,13 @@ class CliError(ArestorException):
     template = "Something went wrong during the procesing of command line."
 
 
+class ClientError(ArestorException):
+
+    """Something went wrong during communication with the API."""
+
+    template = "Something went wrong during communication with the API."
+
+
 class Invalid(ArestorException):
 
     """The received object is not valid."""
