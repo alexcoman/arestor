@@ -18,10 +18,13 @@ import os
 
 import cherrypy
 
+from arestor.api import admin as api_admin
 from arestor.api import base as api_base
 from arestor.api import v1 as api_v1
+from arestor.common import tools as arestor_tools
 from arestor import config as arestor_config
 
+cherrypy.tools.user_required = arestor_tools.UserManager()
 CONFIG = arestor_config.CONFIG
 
 
@@ -29,7 +32,10 @@ class Root(api_base.BaseAPI):
 
     """The / endpoint for the Arestor API."""
 
-    resources = [("v1", api_v1.ArestorV1)]
+    resources = [
+        ("admin", api_admin.AdminEndpoint),
+        ("v1", api_v1.ArestorV1),
+    ]
 
     @classmethod
     def config(cls):
@@ -45,6 +51,6 @@ class Root(api_base.BaseAPI):
                 'server.thread_pool': CONFIG.api.thread_pool,
             },
             '/': {
-                'request.dispatch': cherrypy.dispatch.MethodDispatcher()
+                'request.dispatch': api_base.MethodDispatcher()
             }
         }
