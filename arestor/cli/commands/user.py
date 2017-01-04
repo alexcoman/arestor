@@ -89,6 +89,33 @@ class _ListUsers(cli_base.Command):
         return users.list_users()
 
 
+class _ShowSecret(cli_base.Command):
+
+    """Show the secret for a given user."""
+
+    def _on_task_done(self, result):
+        """What to execute after successfully finished processing a task."""
+        table = prettytable.PrettyTable(["API Key", "Secret"])
+        if result is not None:
+            table.add_row(result)
+        print(table)
+
+    def setup(self):
+        """Extend the parser configuration in order to expose this command."""
+        parser = self._parser.add_parser(
+            "show-secret", help="Show the secret for a given user.")
+        parser.add_argument(
+            "--api_key", help="The client key id.", required=True)
+        parser.set_defaults(work=self.run)
+
+    def _work(self):
+        """Return a specific user."""
+        users = arestor_tools.Users()
+        secret = users.get_secret(api_key=self.args.api_key)
+        if secret:
+            return self.args.api_key, secret
+
+
 class User(cli_base.Group):
 
     """Group for all the available user actions."""
@@ -97,6 +124,7 @@ class User(cli_base.Group):
         (_AddUser, "actions"),
         (_RemoveUser, "actions"),
         (_ListUsers, "actions"),
+        (_ShowSecret, "actions"),
     ]
 
     def setup(self):
