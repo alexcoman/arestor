@@ -89,6 +89,14 @@ class Resource(object):
         self._parent = parent
         self._redis = arestor_util.RedisConnection()
 
+    def _set_data(self, namespace, name, field=None, value=None):
+        """Set the required resource for the current client."""
+        connection = self._redis.rcon
+        key = "{namespace}/{user}/{name}".format(user=self.client_uuid,
+                                                 namespace=namespace,
+                                                 name=name)
+        return connection.hset(key, field, value)
+
     def _get_data(self, namespace, name, field=None):
         """Retrieve the required resource for the current client."""
         connection = self._redis.rcon

@@ -93,6 +93,15 @@ class ArestorClient(base_client.ResourceClient):
     def set_x509_certs(self, cert_keys):
         self._create_resource("keys", cert_keys)
 
+    def set_metadata(self, metadata):
+        self._create_resource("metadata", metadata)
+ 
+    def set_userdata(self, userdata):
+        self._create_resource("userdata", userdata)
+
+    def get_password(self):
+        self.get("password")
+
     def delete_all_data(self):
         """Delete all meta_data for this client_id."""
         for resource_id in self.resources(client_id=self._client_id):
