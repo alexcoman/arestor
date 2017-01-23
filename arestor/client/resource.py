@@ -40,6 +40,7 @@ class ResourceClient(base_client.Client):
             "namespace": namespace if namespace else "",
             "client_id": client_id if client_id else "",
             "resource": resource if resource else "",
+            "partial_resource_id": resource if resource else "",
         }
 
         url = "/admin/resource?{}".format(

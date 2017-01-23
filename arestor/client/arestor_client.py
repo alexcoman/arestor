@@ -50,6 +50,10 @@ class ArestorClient(base_client.ResourceClient):
             "namespace": self._namespace,
         }
 
+    def _get_resource(self, resource_name):
+        """Get resource in the mocked meta-data."""
+        return self.resources(self._base_info["namespace"], self._base_info["client_id"], resource_name)
+
     def _create_resource(self, resource_name, resource_data):
         """Create a new resource in the mocked meta-data."""
         data = {
@@ -101,7 +105,11 @@ class ArestorClient(base_client.ResourceClient):
         self._create_resource("userdata", userdata)
 
     def get_password(self):
-        self.get("password")
+        return self._get_resource("password")
+
+    def get_ssh_pubkeys(self):
+        ssh_keys = self._get_resource("public_keys")
+        return ssh_keys
 
     def delete_all_data(self):
         """Delete all meta_data for this client_id."""

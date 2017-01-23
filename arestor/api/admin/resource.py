@@ -37,7 +37,7 @@ class ResourceEndpoint(base_api.Resource):
     @arestor_util.check_credentials
     @cherrypy.tools.json_out()
     def GET(self, resource_id=None, namespace=None, client_id=None,
-            resource=None):
+            resource=None, partial_resource_id=None):
         """The representation of userdata resource."""
         connection = self._redis.rcon
         response = {"meta": {"status": True, "verbose": "Ok"}, "content": None}
@@ -52,7 +52,7 @@ class ResourceEndpoint(base_api.Resource):
             response["content"] = resource
             return response
 
-        if not any([resource_id, namespace, client_id, resource]):
+        if not any([resource_id, namespace, client_id, resource, partial_resource_id]):
             # Prepare a list with all the available resources.
             mockdata = connection.keys(pattern="*/*/*")
             response["content"] = mockdata
@@ -64,7 +64,12 @@ class ResourceEndpoint(base_api.Resource):
 
         key = KEY_FORMAT.format(namespace=namespace, user=client_id,
                                 name=resource)
-        mockdata = connection.keys(pattern=key)
+        if partial_resource_id:
+             mockdata = connection.hgetall(key)
+             if mockdata.get('data'):
+                 mockdata = mockdata.get('data')
+        else:
+             mockdata = connection.keys(pattern=key)
         response["content"] = mockdata
         return response
 
