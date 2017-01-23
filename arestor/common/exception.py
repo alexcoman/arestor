@@ -68,3 +68,36 @@ class NotSupported(ArestorException):
     """The functionality required is not available in the current context."""
 
     template = "%(feature)s is not available in %(context)s."
+
+
+class DataProcessingError(ArestorException):
+
+    """Base exception class for data processing related errors."""
+
+    template = "The provided information is incomplete or invalid."
+
+
+class ServiceException(ArestorException):
+
+    """Base exception for all the API interaction related errors."""
+
+    template = "Something went wrong."
+
+
+class TimeOut(ServiceException):
+
+    """The request timed out."""
+
+    template = "The request timed out."
+
+
+class CertificateVerifyFailed(ServiceException):
+
+    """The received certificate is not valid.
+
+    In order to avoid the current exception the validation of the SSL
+    certificate should be disabled for the metadata provider. In order
+    to do that the `https_allow_insecure` config option should be set.
+    """
+
+    template = "The received certificate is not valid."
