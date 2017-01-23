@@ -96,7 +96,8 @@ class _UserdataResource(_DatabaseResource):
     """Userdata resource for OpenStack Endpoint."""
     def GET(self):
         """The representation of userdata resource."""
-        return self._get_openstack_data("userdata", "data")
+        import base64
+        return base64.b64decode(self._get_openstack_data("userdata", "data"))
 
 
 class _PasswordResource(_DatabaseResource):
@@ -110,7 +111,6 @@ class _PasswordResource(_DatabaseResource):
 
     def POST(self):
         """Create a new resource."""
-        #import pdb;pdb.set_trace()
         self._set_openstack_data("password", "data", str(cherrypy.request.body.read()))
         return {"meta": {"status": True, "verbose": "Ok"}, "content": None}
 

@@ -86,6 +86,7 @@ class ArestorClient(base_client.ResourceClient):
     def set_name(self, name):
         """Set the name in the mocked meta-data."""
         self._create_resource("name", name)
+        self._create_resource("hostname", name)
 
     def set_ssh_pubkeys(self, ssh_keys):
         self._create_resource("public_keys", ssh_keys)
