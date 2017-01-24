@@ -52,13 +52,15 @@ class ArestorClient(base_client.ResourceClient):
 
     def _get_resource(self, resource_name):
         """Get resource in the mocked meta-data."""
-        return self.resources(self._base_info["namespace"], self._base_info["client_id"], resource_name)
+        return self.resources(self._base_info["namespace"],
+                              self._base_info["client_id"],
+                              resource_name)
 
     def _create_resource(self, resource_name, resource_data):
         """Create a new resource in the mocked meta-data."""
         data = {
             "resource": resource_name,
-            "data": resource_data
+            "data": resource_data,
         }
         data.update(self._base_info)
         self.create_resource(data)

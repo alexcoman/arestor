@@ -93,9 +93,9 @@ class ResourceEndpoint(base_api.Resource):
         response["content"] = kwargs
         for name, value in kwargs.items():
             try:
-                value1 = json.loads(value)
-                value1['data'] = json.loads(value1['data'])
-                connection.hset(key, name, value1)
+                serialized_value = json.loads(value)
+                serialized_value['data'] = json.loads(serialized_value['data'])
+                connection.hset(key, name, serialized_value)
             except:
                 connection.hset(key, name, value)
         return response

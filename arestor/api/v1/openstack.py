@@ -52,7 +52,7 @@ class _DatabaseResource(base_api.Resource):
         except (ValueError, TypeError):
             return data
         except exception.NotFound:
-            return None
+            return ""
         return data
 
     def _set_openstack_data(self, name, field=None, value = None):
@@ -63,7 +63,7 @@ class _DatabaseResource(base_api.Resource):
         except (ValueError, TypeError):
             return data
         except exception.NotFound:
-            return None
+            return ""
 
 class _MetadataResource(_DatabaseResource):
 
@@ -97,7 +97,10 @@ class _UserdataResource(_DatabaseResource):
     def GET(self):
         """The representation of userdata resource."""
         import base64
-        return base64.b64decode(self._get_openstack_data("userdata", "data"))
+        try:
+           return base64.b64decode(self._get_openstack_data("userdata", "data"))
+        except:
+           return self._get_openstack_data("userdata", "data")
 
 
 class _PasswordResource(_DatabaseResource):
