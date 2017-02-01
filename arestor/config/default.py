@@ -30,6 +30,14 @@ class ArestorOptions(conf_base.Options):
                 "resources", default="", required=True,
                 help="An url that holds the resources usually from "
                      "/argus/resources available on the web."),
+            cfg.IntOpt(
+                'retry_count', default=5,
+                help='Max. number of attempts for fetching metadata in '
+                     'case of transient errors'),
+            cfg.FloatOpt(
+                'retry_count_interval', default=4,
+                help='Interval between attempts in case of transient errors, '
+                     'expressed in seconds'),
         ]
 
     def register(self):

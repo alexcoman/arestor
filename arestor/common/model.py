@@ -17,6 +17,7 @@
 # pylint: disable=protected-access
 
 import copy
+import uuid
 
 from oslo_log import log as logging
 import six
@@ -49,13 +50,17 @@ class _FieldDescriptor(object):
         return self._field
 
     def __set__(self, instance, value):
+        if not isinstance(value, self.field.field_type):
+            raise TypeError("Invalid type of value (should be %r)" %
+                            self.field.field_type)
+
         if instance.provision_done:
             if self._field.is_read_only:
                 raise TypeError("%r does not support item assignment" %
                                 self._field.name)
-            instance._changes[self._attribute] = value
-        else:
-            instance._data[self._attribute] = value
+
+        instance._changes[self._attribute] = value
+        instance._data[self._attribute] = value
 
 
 class Field(object):
@@ -74,10 +79,11 @@ class Field(object):
                           be updated. (Default: `False`)
     """
 
-    def __init__(self, name, key, default=None, is_required=False,
-                 is_read_only=False):
+    def __init__(self, name, key, field_type=str, default=None,
+                 is_required=False, is_read_only=False):
         self._name = name
         self._key = key
+        self._fields_type = field_type
         self._default = default
         self._is_required = is_required
         self._is_read_only = is_read_only
@@ -91,6 +97,11 @@ class Field(object):
     def key(self):
         """The internal name of the current field."""
         return self._key
+
+    @property
+    def field_type(self):
+        """The type of the current field."""
+        return self._fields_type
 
     @property
     def default(self):
@@ -196,7 +207,7 @@ class _BaseModel(type):
 
 
 @six.add_metaclass(_BaseModel)
-class Model(object):
+class BaseModel(object):
 
     """Container for meta information regarding the data structure."""
 
@@ -204,13 +215,15 @@ class Model(object):
         self._data = self._meta.get_defaults()
         self._changes = {}
 
+        self._cache = {}
+
         self._provision_done = False
         self._set_fields(fields)
         self._provision_done = True
 
     def _unpack(self, value):
         """Obtain the raw representation of the received object."""
-        if isinstance(value, Model):
+        if isinstance(value, BaseModel):
             return value.dump()
 
         if isinstance(value, list):
@@ -269,18 +282,15 @@ class Model(object):
                     "The required field %(field)r is missing.",
                     field=field_name)
 
-    def update(self, fields=None):
+    def update(self, fields):
         """Update the value of one or more fields."""
-        if fields:
-            changes = {}
-            for field_name, field in self._meta.fields.items():
-                if field_name in fields:
-                    changes[field.key] = fields[field_name]
-            self._data.update(changes)
+        if not fields:
+            return
 
-        if self._changes:
-            self._data.update(self._changes)
-            self._changes.clear()
+        for field_name, field in self._meta.fields.items():
+            if field_name in fields:
+                self._changes[field.key] = fields[field_name]
+        self._data.update(self._changes)
 
     def commit(self):
         """Apply all the changes on the current model."""
@@ -302,3 +312,48 @@ class Model(object):
             content[field.key] = value
 
         return content
+
+
+class ArestorModel(BaseModel):
+
+    resource_id = Field(name="resource_id", key="resource_id",
+                        default=lambda: str(uuid.uuid1()))
+    """The resource ID for the resource. The value MUST be unique in
+    the context of the resource if it is a top-level resource, or in the
+    context of the direct parent resource if it is a child resource."""
+
+    def __init__(self, connector, **fields):
+        super(ArestorModel, self).__init__(**fields)
+        self._connector = connector
+
+    def commit(self):
+        """Apply all the changes on the current model."""
+        self._connector.set(self, self.__class__.__name__)
+        super(ArestorModel, self).commit()
+
+    @classmethod
+    def get(cls, connector, resource_id=None):
+        """Retrieves the required resources.
+
+        :param resource_id:      The identifier for the specific resource
+                                 within the resource type.
+        """
+        if resource_id:
+            resource = connector.get(cls.__name__, resource_id)
+            content = cls.process_raw_data(resource)
+            return cls(connector, **content)
+        else:
+            resources = []
+            for resource in connector.get_all(cls.__name__):
+                content = cls.process_raw_data(resource)
+                resources.append(cls(connector, **content))
+            return resources
+
+    @classmethod
+    def remove(cls, connector, resource_id):
+        """Delete the required resource.
+
+        :param resource_id:   The identifier for the specific resource
+                              within the resource type.
+        """
+        return connector.remove(cls.__name__, resource_id)
