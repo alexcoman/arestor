@@ -13,18 +13,18 @@
 #    under the License.
 
 
-"""Arestor API version 1."""
+"""Admin endpoint for the Arestor API."""
 
+from arestor.api.admin import resource
 from arestor.api import base as base_api
-from arestor.api.v1 import openstack
 
 
-class ArestorV1(base_api.BaseAPI):
+class AdminEndpoint(base_api.BaseAPI):
 
-    """Arestor API version 1."""
+    """Admin endpoint for the Arestor API."""
 
     resources = [
-        ("openstack", openstack.OpenStackEndpoint),
+        ("resource", resource.ResourceEndpoint),
     ]
     """A list that contains all the resources (endpoints) available for the
     current metadata service."""
