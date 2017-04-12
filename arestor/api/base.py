@@ -16,13 +16,16 @@
 
 (Beginning of) the contract that all the resources must follow.
 """
+import cherrypy
 
 import cherrypy
 from oslo_log import log as logging
 
 from arestor import config as arestor_config
+from arestor.common import constant
 from arestor.common import exception
 from arestor.common import util as arestor_util
+
 
 CONFIG = arestor_config.CONFIG
 LOG = logging.getLogger(__name__)
@@ -89,17 +92,22 @@ class Resource(object):
         self._parent = parent
         self._redis = arestor_util.RedisConnection()
 
+    def _set_data(self, namespace, name, field=None, value=None):
+        """Set the required resource for the current client."""
+        connection = self._redis.rcon
+        key = constant.KEY_FORMAT.format(user=self.client_uuid,
+                                         namespace=namespace,
+                                         name=name)
+        return connection.hset(key, field, value)
+
     def _get_data(self, namespace, name, field=None):
         """Retrieve the required resource for the current client."""
         connection = self._redis.rcon
-        key = "{namespace}/{user}/{name}".format(user=self.client_uuid,
-                                                 namespace=namespace,
-                                                 name=name)
+        key = constant.KEY_FORMAT.format(user=self.client_uuid,
+                                         namespace=namespace,
+                                         name=name)
         if not connection.exists(key):
             raise exception.NotFound(object=key, container="database")
-
-        if field is None:
-            return connection.hgetall(key)
 
         if not connection.hexists(key, field):
             raise exception.NotFound(object=field, container=key)
