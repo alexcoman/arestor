@@ -13,32 +13,20 @@
 #    under the License.
 
 """Arestor API endpoint for OpenStack Mocked Metadata."""
+import base64
 import cherrypy
 
 from oslo_log import log as logging
 
 from arestor.api import base as base_api
 from arestor.common import exception
-from arestor.common import util as arestor_util
 
 
 LOG = logging.getLogger(__name__)
 
 
-class _Content(base_api.Resource):
-
-    """Content resource for the OpenStack Endpoint."""
-
-    exposed = True
-
-    def GET(self):
-        """The representation of the content resource."""
-        pass
-
-
-class _MetadataResource(base_api.Resource):
-
-    """Metadata resource for OpenStack Endpoint."""
+class _OpenStackResource(base_api.Resource):
+    """Base class for OpenStack resources."""
 
     exposed = True
 
@@ -48,7 +36,30 @@ class _MetadataResource(base_api.Resource):
             return self._get_data(namespace="openstack",
                                   name=name, field=field)
         except exception.NotFound:
-            return ""
+            return None
+
+    def _set_openstack_data(self, name, field=None, value=None):
+        """Set the required resource from the Openstack namespace."""
+        data = None
+        try:
+            data = self._set_data(namespace="openstack",
+                                  name=name, field=field, value=value)
+        except (ValueError, TypeError):
+            pass
+        return data
+
+
+class _Content(_OpenStackResource):
+    """Content resource for the OpenStack Endpoint."""
+
+    def GET(self):
+        """The representation of the content resource."""
+        pass
+
+
+class _MetadataResource(_OpenStackResource):
+    """Metadata resource for OpenStack Endpoint."""
+
 
     @cherrypy.tools.json_out()
     def GET(self):
@@ -62,44 +73,39 @@ class _MetadataResource(base_api.Resource):
             "launch_index": self._get_openstack_data("launch_index", "data"),
             "project_id": self._get_openstack_data("project_id", "data"),
             "name": self._get_openstack_data("name", "data"),
+
+            "keys": self._get_openstack_data("keys", "data"),
+            "public_keys": self._get_openstack_data("public_keys", "data"),
         }
 
         return meta_data
 
 
-class _UserdataResource(base_api.Resource):
-
-    exposed = True
-
+class _UserdataResource(_OpenStackResource):
     """Userdata resource for OpenStack Endpoint."""
-
-    def _get_openstack_data(self, name, field=None):
-        """Retrieve the required resource from the Openstack namespace."""
-        try:
-            return self._get_data(namespace="openstack",
-                                  name=name, field=field)
-        except exception.NotFound:
-            return ""
 
     @cherrypy.tools.json_out()
     def GET(self):
         """The representation of userdata resource."""
-        return self._get_openstack_data("user_data", "data")
+        userdata = self._get_openstack_data("user_data", "data")
+        if userdata:
+            return base64.b64decode(userdata)
+        else:
+            return ""
 
 
-class _PasswordResource(base_api.Resource):
+class _PasswordResource(_OpenStackResource):
 
     exposed = True
 
     """Password resource for OpenStack Endpoint."""
-
     def GET(self):
-        """The representation of password resource."""
-        pass
+        return self._get_openstack_data("password", "data")
 
     def POST(self):
-        """Overwrite the password resource."""
-        pass
+        """Create a new resource."""
+        self._set_openstack_data("password", "data", str(cherrypy.request.body.read()))
+        return {"meta": {"status": True, "verbose": "Ok"}, "content": None}
 
 
 class _LatestVersion(base_api.BaseAPI):
