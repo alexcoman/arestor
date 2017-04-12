@@ -25,3 +25,5 @@ TASK_FAILED = "failed"
 
 AC_ALLOW_METHODS = 'Access-Control-Allow-Methods'
 PID_TMP_FILE = os.path.join(gettempdir(), "arestor.pid")
+
+KEY_FORMAT = "{namespace}/{user}/{name}"
